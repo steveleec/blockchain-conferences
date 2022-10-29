@@ -373,3 +373,770 @@ Usando Smart Contracts, el "servidor" y la "base de datos" están dados por la M
 6. Al dirigirte a tu contrato en Goerli.etherscan.io con el siguiente link `https://goerli.etherscan.io/address/0xc5bccf767704432a3a22318a0df3067d9a3fc217`, del cual la última parte será reemplazada por la dirección (address) de tu contrato, podrás (1) encontrar el código del Smart Contract, (2) interactuar con el contrato directamente (`Read Contract` y `Write Contract`) y (3) observar otros detalles del mismo.
 
 ![image-20221002073616250](https://user-images.githubusercontent.com/3300958/193496581-80b79e6a-78df-4718-9c28-fb779aaabf85.png)
+
+**_Creación del Primer Token (wizard)_**
+
+ En este primer ejercicio crearemos un token usando el wizard de Open Zeppelin y sus librerías. Es la manera más suscinta de crear una criptomoneda. Necesitamos las siguientes herramientas
+
+1. [Wizard](https://docs.openzeppelin.com/contracts/4.x/wizard)
+2. [Remix IDE](https://remix.ethereum.org/)
+3. [Librerías Open Zeppelin](https://docs.openzeppelin.com/contracts/4.x/)
+4. [Mumbai Scan](https://mumbai.polygonscan.com/)
+
+**_Desarrollo del ejercicio_**
+
+1. Crear el token en el Wizard
+2. Publicarlo usando Remix
+3. Cada persona creará su propio token
+4. Conocerá todos los métodos disponibles de su dinero programable
+5. Cada participante enviará tokens a su compañero
+6. Métodos a explorar:
+   1. name
+   2. symbol
+   3. decimals
+   4. totalSupply
+   5. mint
+   5. burn
+   6. approve
+   7. transferFrom
+   8. 
+7. Se agregará el token a Metamask
+8. Cada persona describirá el método que está utilizando para luego poder armarlo con código
+
+**Conceptos para armar tu propio token**
+
+- definición de variables
+- definición de métodos
+- mapping
+- require
+- eventos
+- constructor
+- msg.sender
+- herencia
+
+**_Hash table en contratos inteligentes_**
+
+La estructura de datos llamado mapping es uno de los más usados en Solidity. `mapping(_KeyType => _ValueType)` Es el equivalente a un Hash Table o un objeto (`var obj = {}`) en Javascript. A cada `key` le corresopnde un `value` dentro del mapping.
+
+![image-20221002122245338](https://user-images.githubusercontent.com/3300958/193496570-606c0ff9-4e69-4fe0-92af-24c07e9de6c0.png)
+
+`_KeyType` no puede ser otro mapping, struct o array. `_ValueType` puede ser de cualquier tipo, incluyendo mapping, arrays y structs.
+
+Un `mapping` empieza con una inicialización de todos los posibles valores de `_KeyType` que están mapeados a un valor por defecto que es 0. Además, con `mapping` no se lleva la cuenta de los keys cuyos valores sea 0. Ello justamente impide que no se pueda borrar un `mapping` a menos que se sepa el `key`.
+
+Los `mapping`s solo pueden tener un tipo de ubicación de información: `storage`. No se pueden usar `mapping`s como parámetros de una función o como el valor de retorno.
+
+Un `mapping` no tiene longitud (`length`), como lo puede tener un array. Un `mapping` tampoco es iterable porque no hay manera de conocer sus `key`s mediante ningún método. Se puede guardar las llaves del `mapping` en otro array para poder iterar luego.
+
+En el siguiente ejemplo se incluye un `mapping` para guardar una lista de saludos en el cual el `_KeyType` se va incrementando en uno a medida que la función `set` es llamada.
+
+3_Mapping
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+contract MiPrimerContrato {
+    string saludo; // empieza como un string vacío ('') por definición
+
+    // position => saludo
+    mapping(uint256 => string) listaSaludos;
+
+    // mapping address a edad
+    mapping(address => uint256) public edadPorAddress;
+
+    // double mapping
+    // es como crear una matriz (x, y) y guardar un valor en dicha coordenada
+    // crear una matriz de deudores y acreedores con mapping
+    /**
+    Deudores =>     Marcos  |   Julian  |   Susan
+    Acreedores
+        Luis        100            0         200
+        Carmen       0            200        300
+        Raul        200           400        500
+
+        * Marcos debe 100 a Luis
+        * Marcos debe 0 a Carmen
+        * Marcos debe 200 a Raul
+        * ...
+     */
+    // acreedor => dedudor => deuda
+    mapping(string => mapping(string => uint256)) deudas;
+
+    // al llamar el setter métodos
+    // deudas[Luis][Marcos] = 100
+    // deudas[Luis][Susan] = 200
+    // deudas[Carmen][Julian] = 200
+    // deudas[Carmen][Susan] = 200
+    // ...
+
+    // SETTER
+    function setSaludo(uint256 position, string memory _nuevoSaludo) public {
+        saludo = _nuevoSaludo;
+
+        // guardando en el mapping;
+        listaSaludos[position] = _nuevoSaludo;
+    }
+
+    function setEdadPorAddress(address _account, uint256 _edad) public {
+        edadPorAddress[_account] = _edad;
+    }
+
+    function guardarDeuda(
+        string memory _acreedor,
+        string memory _deudor,
+        uint256 _deuda
+    ) public {
+        deudas[_acreedor][_deudor] = _deuda;
+    }
+
+    // GETTER
+    function get() public view returns (string memory) {
+        return saludo;
+    }
+
+    function getSaludo(uint256 position) public view returns (string memory) {
+        return listaSaludos[position];
+    }
+
+    function getEdad(address _account) public view returns (uint256) {
+        return edadPorAddress[_account];
+    }
+
+    function getDeuda(string memory _acreedor, string memory _deudor)
+        public
+        view
+        returns (uint256)
+    {
+        return deudas[_acreedor][_deudor];
+    }
+}
+```
+
+
+**_Propagación de un Error vía `require` o `revert`_**
+
+`require` o `revert` en Solidity es usado para validar ciertas condiciones dentro del código y lanzar una excepción si dicha condición no es cumplida. Esto es importante para prevenir la finalización de una transacción si se detecta una condición indeseada.
+
+Cabe mencionar que esta propagación del error será notada por el usuario en el front-end (dApp) antes de firmar una transacción mediante su billetera (de Metamask u otra).
+
+Veamos cómo aplicamos `require` o `revert` en el código:
+
+4_ErroRevert.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+contract RevertRequyire {
+    // mapping address a edad
+    mapping(address => uint256) public edadPorAddress;
+
+    function setEdadPorAddress(address _account, uint256 _edad) public {
+        edadPorAddress[_account] = _edad;
+    }
+
+    function setEdadPorAddressManejaError(address _account, uint256 _edad)
+        public
+    {
+        require(_edad >= 30, "Edad menor a 30");
+        edadPorAddress[_account] = _edad;
+    }
+
+    function setEdadPorAddressManejaError2(address _account, uint256 _edad)
+        public
+    {
+        if (_edad <= 29) {
+            revert("Edad menor a 30");
+        }
+
+        edadPorAddress[_account] = _edad;
+    }
+}
+```
+`revert` y `require` propagarán el error si es que no cumple las condiciones allí definidas. La única diferencia entre uno y otro es que `require` lleva el condicional y el mensaje de error como argumentos de un método. En cambio, `revert` ofrece mayor flexibilidad para validar y plantear las condiciones a cumplir. `revert` solo lleva como argumento el mensaje del error.
+
+**_Usando eventos a modo de notificación_**
+
+`Events` dentro de Solidity son disparados cuando algún metodo en particular es ejecutado. Los eventos pueden llevar información adicional para explicar lo que esá sucediendo. Normalmente, el nombre del evento seguido de la información que contiene, explica muy bien un suceso dentro del blockchain.
+
+Los eventos disparados desde un Smart Contract son prograpagos en el Blockchain. Dichos eventos quedan registrados por siempre. En un futuro se pueden hacer queries de eventos disparados anteriormente. Incluso se puede usar para almacenar información de manera económica. Estos eventos pueden ser captados desde el front-end en un dApp si se establece una conexión.
+
+5_Events.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+contract Eventos {
+    // Eventos
+    // Disparar un evento cada vez que se guarda un saludo
+    // _position - position en la que se desea guardar el saludo
+    // _nuevoSaludo - string que representa al nuevo saludo
+    event CambioDeSaludo(uint256 _position, string _nuevoSaludo);
+
+    // Disparar un evento cuando se asocia un 'address' con una edad
+    // _account - address para el cual se asocia la edad
+    // _edad - nueva edad para asociar con un address
+    event NuevaEdadParaAddress(address _account, uint256 _edad);
+
+    // position => saludo
+    mapping(uint256 => string) listaSaludos;
+
+    // mapping address a edad
+    mapping(address => uint256) public edadPorAddress;
+
+    function setEdadPorAddress(address _account, uint256 _edad) public {
+        edadPorAddress[_account] = _edad;
+        emit NuevaEdadParaAddress(_account, _edad);
+    }
+
+    // SETTER
+    function setSaludo(uint256 _position, string memory _nuevoSaludo) public {
+        // guardando en el mapping;
+        listaSaludos[_position] = _nuevoSaludo;
+        emit CambioDeSaludo(_position, _nuevoSaludo);
+    }
+}
+```
+
+Ejemplos de eventos propagados en la red [link](https://polygonscan.com/address/0x54FC36444355602Fb110842411D3b0E6C4F1Cfd6#events).
+
+![image-20221005063541888](https://user-images.githubusercontent.com/112733805/194439372-2e95a90d-1d59-4c92-8e45-9f7746906317.png)
+
+**_msg.sender_**
+
+Es la cuenta (address) que llama o ha ejecutado una función (de smart contract) o ha creado una transacción.
+
+Esta cuenta (address) puede ser una dirección de un contrato (CA) o una persona como nosotros (EOA).
+
+`msg.sender` funciona como una variable global dentro de Solidity y puede ser usada dentro de los métodos del Smart Contract como una variable ya definida.
+
+Otras variables globales en Solidity [link](https://docs.soliditylang.org/en/v0.8.9/cheatsheet.html?highlight=global%20variables#global-variables).
+
+5_5_MsgSender.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity >=0.4.16 <0.9.0;
+
+contract MiPrimerContrato {
+    // ...
+    address caller;
+    function setCaller() public returns(address) {
+        caller = msg.sender;
+        return msg.sender;
+    }
+}
+```
+
+**_Constructors_**
+
+Los constructores son un concepto muy conocido en Programación Orientada a Objetos. En muchos lenguajes, cuando se definen clases, también se puede definir un mágico método que solamente se ejecutará una sola vez en el momento en que una nueva instancia del objecto es creada.
+
+En el caso de Solidity, el código definido dentro del constructor, solo se ejecutará una sola vez cuando el contrato es creado y publicado en la red.
+
+Es una función opcional declarada. Cuando no hay constructor, el contrato asumirá un constructor por defecto que es `constructor() {}`.
+
+Es importante mencionar que el `bytecode` publicado en la red, no contiene el código del `constructor`, dado que el constructor corre solo una vez al ser publicado.
+
+<u>¿Cómo se define un constructor en Solidity?</u>
+
+Se utiliza la palabra clave `constructor()`. No hay necesidad de añadir la palabra clave `function` dado que el constructor es una función especial.
+
+```solidity
+contract Constructor {
+		constructor() {
+				// código que será ejecutado una sola vez
+				// cuando se cree el contrato
+		}
+}
+```
+
+<u>Inicializar el Smart Contract con valores externos</u>
+
+El constructor es muy útil para pasar valores de inicialización al Smart Contract. Nada impide que estos valores sean escritos en el futuro. Sin embargo, ello implicaría definir métodos adicionales de `set`.
+
+```solidity
+contract Constructor {
+		string saludo;
+		constructor(string memory _saludo) {
+			saludo = _saludo;
+		}
+}
+```
+
+<u>¿Cómo saber quién publicó el smart contract?</u>
+
+Ya sabemos que `msg.sender` es una variable global en solidity que nos permite saber quién ha llamado un método en particular. Cuando usamos `msg.sender` dentro de un `constructor` en solidity, podemos saber la cuenta (address) que hizo la publicación del contrato. Veámoslo:
+
+8_Constructor.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.9;
+
+contract Constructor {
+    address public publicador;
+
+    // position => saludo
+    mapping(uint256 => string) listaSaludos;
+
+    // mapping address a edad
+    mapping(address => uint256) public edadPorAddress;
+
+    constructor(uint256 _position, string memory _saludo) {
+        publicador = msg.sender;
+
+        listaSaludos[_position] = _saludo;
+        edadPorAddress[msg.sender] = 33;
+    }
+
+    function quienEsPublicador() public view returns (address) {
+        return publicador;
+    }
+}
+```
+
+Al publicar este contrato, la variable `publicador` obtendrá como valor el address de la persona que lo publicó. Además de ello, todas las inicializaciones dentro del `constructor`, serán ejecutadas una sola vez.
+
+**Construcción del token sin librerías**
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.9;
+
+contract ERC20Generic {
+    /**
+      1. Una criptomoneda debería tener un <u>nombre</u> que lo identifique
+      2. Una criptomoneda debería tener un <u>símbolo</u> que lo identifique
+      3. Definir la cantidad de <u>decimales</u> del token (normalmente hay 18 pero otros tokens tienen 6, como el USDC)
+      4. Internamente debería llevar la <u>cuenta de los balances</u> de cada persona que tiene criptomoneda
+      5. Llevar la <u>cuenta del total de tokens</u> repartidos
+      6. Método que permite la <u>acuñación</u> de tokens a favor de una cuenta en particular (`mint`)
+      7. Método que permite <u>quemar</u> (burn) tokens. La lógica detrás de esto es que genera deflación (menos dinero en la economía)
+      8. Método que permite <u>transferir</u> tus propios tokens a una segunda persona (método `transfer`)
+          * Internamente validar que el usuario tiene más tokens de los que quiere enviar
+      9. Llevar la cuenta de los balances de tokens a gastar que los mismos dueños (del token) han <u>autorizado a otras cuentas para gastar</u> en su representación
+      10. Método que permite <u>transferir tokens en nombre</u> de una segunda persona con previa aprobación de la segunda persona (método `transferFrom`)
+          * Validar que esa segunda persona tiene más tokens de lo que se planea enviar
+      11. Definir métodos para incrementar el permiso de gastar tokens de otra persona
+      12. Disparar eventos de Transferencia cada vez que se transfieren tokens de un lado a otro. Dispararar eventos de Aprobación cada vez que una cuenta le da permiso a otra para gastar sus tokens 
+      13. Método para visualizar el total de tokens de una cuenta
+      14. Método para visualizar la cantidad de tokens a gastar en nombre de otra persona con su previo permiso
+   */
+
+    //   5. Llevar la <u>cuenta del total de tokens</u> repartidos
+    uint256 totalSupply;
+
+    //   4. Internamente debería llevar la <u>cuenta de los balances</u> de cada persona que tiene criptomoneda
+    //      Es decir, a cada billetere se le debe asociar la cantidad de tokens que tiene
+    mapping(address => uint256) balances;
+
+    //   9. Llevar la cuenta de los balances de tokens a gastar que los mismos dueños (del token) han <u>autorizado a otras cuentas para gastar</u> en su representación
+    mapping(address => mapping(address => uint256)) _allowances; // permisos
+
+    //   12. Disparar eventos de Transferencia cada vez que se transfieren tokens de un lado a otro. Dispararar eventos de Aprobación cada vez que una cuenta le da permiso a otra para gastar sus tokens
+    event Transfer(address from, address to, uint256 value);
+
+    //   1. Una criptomoneda debería tener un <u>nombre</u> que lo identifique
+    function name() public pure returns (string memory) {
+        return "My primer token";
+    }
+
+    //   2. Una criptomoneda debería tener un <u>símbolo</u> que lo identifique
+    function symbol() public pure returns (string memory) {
+        return "MPTK";
+    }
+
+    //   3. Definir la cantidad de <u>decimales</u> del token (normalmente hay 18 pero otros tokens tienen 6, como el USDC)
+    function decimals() public pure returns (uint256) {
+        return 18;
+    }
+
+    //   6. Método que permite la <u>acuñación</u> de tokens a favor de una cuenta en particular (`mint`)
+    //      Los parámetros son la billetera (address) que recibirá los tokens y la cantidad de tokens
+    function mint(address _account, uint256 _amount) public {
+        totalSupply += _amount;
+        balances[_account] += _amount;
+
+        emit Transfer(address(0), _account, _amount);
+    }
+
+    // 7. Método que permite <u>quemar</u> (burn) tokens. La lógica detrás de esto es que genera deflación (menos dinero en la economía)
+    function burn(address _account, uint256 _amount) public {
+        totalSupply -= _amount;
+        balances[_account] -= _amount;
+        emit Transfer(_account, address(0), _amount);
+    }
+
+    // 8. Método que permite <u>transferir</u> tus propios tokens a una segunda persona (método `transfer`)
+    function transfer(address _account, uint256 _amount) public {
+        balances[msg.sender] -= _amount;
+        balances[_account] += _amount;
+
+        emit Transfer(msg.sender, _account, _amount);
+    }
+
+    //   10. Método que permite <u>transferir tokens en nombre</u> de una segunda persona con previa aprobación de la segunda persona (método `transferFrom`)
+    //       Lleva parámetros
+    //       - la cuenta de la persona que autorizó la transferencia
+    //       - La cuenta de la emprepsa que recibirá los toens
+    //       - la cantidad de tokens ser transferidos
+    function transferFrom(
+        address _sender,
+        address _recipient,
+        uint256 _amount
+    ) public {
+        // verificar permiso
+        uint256 allowance_ = _allowances[_sender][msg.sender];
+        require(allowance_ >= _amount, "No tiene permiso");
+
+        // tranferir entre dos cuentas
+        balances[_sender] -= _amount;
+        balances[_recipient] += _amount;
+
+        _allowances[_sender][msg.sender] = allowance_ - _amount;
+    }
+
+    //   11. Definir métodos para incrementar el permiso de gastar tokens de otra persona
+    //       Este método solo puede ser llamado por la persona que desea otorgar el permiso a otra
+    function approve(address spender, uint256 amount) public returns (bool) {
+        _allowances[msg.sender][spender] = amount;
+        return true;
+    }
+
+    // 13. Método para visualizar el total de tokens de una cuenta
+    function balanceOf(address _account) public view returns (uint256) {
+        return balances[_account];
+    }
+
+    // 14. Método para visualizar la cantidad de tokens a gastar en nombre de otra persona con su previo permiso
+    function allowance(address _owner, address _spender)
+        public
+        view
+        returns (uint256)
+    {
+        return _allowances[_owner][_spender];
+    }
+}
+```
+
+**_Herencia en Contratos_**
+
+En Solidity, se puede decir que los contratos se comportan como las clases en cualquier otro lenguaje de Programación Orientada a los Objetos. Es decir, contratos pueden heredar y también pueden ser heredados. De este modo podemos construir patrones de diseño complejos.
+
+<u>¿Cómo se hereda en Solidity?</u>
+
+Se utiliza una palabra clave llamada `is` seguido del contrato. Veámoslo:
+
+```solidity
+contract A {} // base contract
+contract B is A {} // derived contract
+```
+
+Un contrato también puede heredar de múltiples contratos:
+
+```solidity
+contract A {} // base contract
+contract B {} // base contract
+contract C is A, B {} // derived contract
+```
+
+Cuando un contrato hereda otros contratos, en realidad solo un único contrato es creado en el blockchain. El código de los contratos base (`A` en el primer ejemplo; `A` y `B` en el segundo ejemplo) es en realidad compilado en el único contrato publicado (`B` en el primero ejemplo; `C` en el segundo ejemplo).
+
+Para poder exponer un método de un contrato base a otro contrato derivado, de manera tal que no sea usada externamente, dicho método debe definirse como interno (`internal`).
+
+<u>Orden para heredar</u>
+
+Solidity guía la herencia de contratos usando el algoritmo de linearización C3 ([c3 linearization](https://en.wikipedia.org/wiki/C3_linearization)). Con éste, se posibilita la herencia múltiples propiedades y métodos de modo tal que no hacen conflicto.
+
+En Solidity, se tienen que listar los contratos desde el contrato más base a la izquierda hasta el más derivado hacia la derecha.
+
+```solidity
+contract Humano{}
+contract Hombre is Humano{}
+
+// contract Marcos is Hombre, Humano{} // INCORRECT
+contract Marcos is Humano, Hombre {}
+```
+<u>La palabra clave `super`</u>
+
+`super` es usado en herencia de contratos cuando se desea llamar un método definido en un nivel arriba en la jerarquía de herencia. `super.[method]` encontrará el método más cerca del smart contract que lo esté llamando.
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.9;
+
+contract Humano {
+    function saludoHumano() public pure returns (string memory) {
+        return "Hola, como vamos. Soy Humano";
+    }
+}
+
+contract Hombre is Humano {
+    function saludoHombre() public pure returns (string memory) {
+        return "Hola, como vamos. Soy Hombre";
+    }
+
+    // Llamando al método 'saludar' del papá
+    function bienvenidaDeHumano() public pure returns (string memory) {
+        return super.saludoHumano();
+    }
+
+    function bienvenidaDeHumano2() public pure returns (string memory) {
+        return Humano.saludoHumano();
+    }
+}
+
+contract Marcos is Humano, Hombre {
+    function saludoMarcos() public pure returns (string memory) {
+        return "Hola, como vamos. Soy Marcos";
+    }
+
+    // llamando al contrato papá
+    function bienvenidaDeHombre() public pure returns (string memory) {
+        return super.saludoHombre();
+    }
+
+    // llamando al contrato abuelo
+    function saludoDeHumano() public pure returns (string memory) {
+        return super.saludoHumano();
+    }
+}
+```
+
+# Parte 2
+
+## Desarrollando una colección de NFTs
+
+ En esta sección vamos a desarrollar una colección de NFTs. Usaremos el siguiente stack:
+
+1. Interplanetary File System (IPFS)
+2. ERC721 standard
+3. Librería de generación imágenes (npm library)
+
+#### IPFS
+
+> La misión de IPFS es crear una red resiliente, mejorable y abierta para preservar e incrementar el conocimiento de la humanidad.
+
+ IPFS desea hacer de la web Peer to Peer (P2P) en vez de tener el tradicional modelo de cliente y servidor. IPFS interconetará nodos de manera resiliente.
+
+ Está basado en al direccionamiento basado en el contenido.
+
+ IPFS plantea solucionar varios problemas actuales: censura, links rotos (no se basa en un servidor en el contenido que puede esta distribuido en varios nodos), plantea un modelo de seguridad (asegura que el recurso que estás solicitando sea realmente el que estás pidiendo a través del hash del mismo recurso).
+
+Casos de uso: guardar recurso estáticos. páginas web. archivar data. construir Dapps. bases de datos científicas. publicaciones científicas.
+
+ El internet como lo conocemos tiene un problema que reside en la centralización. La información está guardada en granjas de servidores que son controlados por una empresa individual. La centralización trae otro problema que es la censura. El gobierno puede bloquear el accesso a ciertos recursos si es que lo deseara, por ejemplo aquella vez que impidió el acceso a Wikipedia por llamarlo una amenaza nacional.
+
+ La razón por la cual aún se sigue usando este model es porque la centralización de servidores permite a las empresas tener control sobre la rapidez en que el contenido puede ser entregado.
+
+ El objetivo de IPFS es hacer de la web completamente distribuida en una similar manera en que BitTorrent funciona.
+
+¿Cómo se accede a la información actualmente en el internet?
+
+ Cuando deseas descargar un archivo, tu le dices al navegador exactamente dónde de dónde descargarlo. Por ejemplo se utiliza el siguiente link `htps://webiste.com/archivo.jpg`. Es decir, la ubicación del archivo será el IP address o el nombre del dominio. A esto se le llama Direccionamiento basado en la ubicación (location-based addressing). En el caso en que el servidor de ese archivo esté caído, no habría la posibilidad de obtener dicho archivo, incluso aunque otra persona lo hubiera obtenido.
+
+ Para solucionar ese problema, IPFS propone el Direccionamiento basdo en el contenido (content-based addressing) y ya no en la ubicación. En vez de decirle al navegador dónde conseguir el recurso, ahora se le dirá qué es lo que se quiere conseguir. Para lograr ello, es necesario que cada recurso posea un hash único, que es como su huella digital. Entonces, cuando deseas descargar cierto archivo, se preguntará a la red quién tiene el archivo con dicho hash.
+
+ ¿Y cómo podrías saber que la persona que te envía el recurso no lo ha alterado? Al recibir el recurso, puedes aplicar un método hash en el recurso y comparar el resultado con el hash inicialmente usado para solicitar dicho recurso.
+
+ Cuando múltiples personas publican el mismo recurso en la red, este recurso se crea una sola vez y se evita la duplicación, lo cual hace la red más eficiente.
+
+¿Cómo IPFS almancena recursos y lo hace accesible para otras personas?
+
+ IPFS utiliza "objetos de IPFS" y puede almacenar hasta 256 kb de información. Dentro de este objeto se puede inlcuir links a otros objetos de IPFS. En el caso en que se almacene un recurso que es mucho mayor al límite de 256 kb, el recurso se dividirá en múltiples objetos de IPFS de 256 kb cada uno. Seguido a ello, el sistema creará un objeto IPFS vacío que se encargará de juntar los links a todos los objetos de IPFS creados.
+
+ Dado que IPFS utiliza el direccionamiento basado en el contenido (content-based addressing), una vez que un recurso es añadido a IPFS, ya no puede ser cambiado. IPFS es una base de datos inmutable, parecida a un blockchain.
+
+ El más grande problema que tiene IPFS es el de mantener los archivos disponibles. Todos los nodos de la red guarda un caché de los archivos que ha descargado. También ayudan a compartir el recurso si es solicitado desde otro lugar. El problema surge cuando los nodos que tienen ciertos recursos en memoria se desconectan y nadie más puede obtener dichos recursos. Es como tener BitTorrent sin clientes que surtan un recurso que se está descargando.
+
+ ¿Cómo podemos solucionarlo? Podemos incentivar a las personas a mantener activo sus nodos para guardar recursos, de modo tal que estén disponibles. O también podemos preventivamente distribuir los recursos en varios nodos de modo tal que siempre hay copias disponibles. Eso es exactamente lo que Filecoin intenta hacer.
+
+ Filecoin ha sido creado por el mismo grupo de gente que creó IPFS. Filecoin es un blockchain creade encima de IPFS que busca ser un mercado decentralizado para guardar información. Es decir, si dispones de un espacio de memori disponible, lo pudes rentar y hacer dinero. De ese modo, Filecoin incentiva a los nodos a mantenerse conectados tan largo como sea posible para poder obtener las recompensas. Del mismo modo, el sistema se preocupa que los recursos se dupliquen en varios nodos.
+
+ ¿Cómo se puede usar IPFS? En el año 2017, el gobierno de Turquía decidió prohibir el acceso a Wikipedia. La respuesta frente a ello, es que se puso una copia de Wikipedia en IPFS. Dado que IPFS es distribuido y no hay servidores centrales, el gobierno no puede bloquearlo.
+
+¿Por qué es llamado interplanetario? Pues en cada planeta, una vez que algn recurso ya se ha solicitado por primera vez, estará cacheado en memoria para ser obtenido dentro del mismo planeta y no habría la necesidad de viajar hasta otro planeta para obtener dicho recurso.
+
+**Instalación de IPFS**
+
+ Dirígete a `https://ipfs.tech/#install` e instala la versión desktop de IPFS.
+
+![image-20221024220019114](https://user-images.githubusercontent.com/3300958/198416349-1b953f59-d7d1-4079-ad4b-b5fd529346d3.png)
+
+ En la sección de `FILES` es donde guardaremos la información para la colección de NFTs.
+
+![image-20221024234359006](https://user-images.githubusercontent.com/3300958/198416354-4a6f4cfb-f31f-4a12-b893-2ab8b0dd9d7b.png)
+
+**ERC721 Standard**
+
+ El ERC721 es un tipo de estándar o formato que los desarrolladores acuerdan seguir. No es obligatorio pero ayuda a crear compatibilidad con una serie de aplicaciones descentralizadas. En Ethereum, el estándar ERC721 se usa para crear NFTs.
+
+ ¿Qué es un NFT? NFT significa un Token No Fungible. Fungible significa intercambiable o reemplazable. Por ejemplo, un bitcoin es fungible ya que al ser intercambiado por exactamente otro bitcoin, su valor no ha cambiado. En cambio, los NFT son completamente únicos y no existe equivalencia de uno a uno con otro NFT.
+
+ Con el estándar ERC721, cada token del smart contract puede tener un valor diferente a raíz de su antiguedad, rareza o incluso por como luce visualmente. Cada NFT tiene un token id y un método especial que al introducir dicho token id, devuelve un elemento visual que representa al NFT.
+
+ Este tipo de token es perfecto para ser usado en plataformas que ofrecen colleccionables, accesos privados, tickets de lotería, sitios enumerados para conciertos, etc.
+
+ Uno de los proyectos más tempranos y conocidos hasta el momento es [CryptoKitties](https://www.cryptokitties.co/) que usa internamente el estándar ERC721.
+
+![image-20221025000418134](https://user-images.githubusercontent.com/3300958/198416356-db586c2c-dea7-48d4-9500-151dad5348e7.png)
+
+ Se puede observar cómo es que uno de los smart contracts de Crypto Kitties hereda el contrato ERC721 en la siguiente ilustración:
+
+![image-20221025000555282](https://user-images.githubusercontent.com/3300958/198416360-bacf870f-6dc0-420c-91ba-be1288b9241e.png)
+
+ Bajo el estándar ERC721, se pueden crear tokens que son únicos. Con este modelo se ha difundido la idea de tener activos únicos en Ethereum.
+
+ El día de hoy, el uso más común para el ERC721 es arte digital. Las personas compran estos NFTs por una variedad de razones. Algunos quieren apoyar al artista, otros buscan una inversión de largo plazo con la esperanza de que el precio subirá. O quizás simplemente les gusta el arte que representa dicho NFT.
+
+ Sin embargo, los casos de uso de los NFT se extiende más allá del arte. Los NFTs también puede ser usados en juegos que son basados en el blockchain. Estos NFTs representan activos únicos dentro del juego. Ejemplo de ello es `Gods Unchained`. En ese juego puedes collecionar cartas que se pueden tranzar en un mercado de segunda mano.
+
+![image-20221025230458247](https://user-images.githubusercontent.com/3300958/198416363-67e92062-fec4-42fb-8b8e-a6009b5e9ac5.png)
+
+ Los NFTs en la música también se han adaptado. Aplicaciones como Audius permite a los artistas acuñar su trabajo como si fueran tokens ERC721.
+
+10_MyFirstNFTNoLib.sol
+
+```solidity
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.4;
+
+import "@openzeppelin/contracts/token/ERC721/IERC721.sol";
+
+contract MyFirstNFTNoLib is IERC721 {
+    /**
+    name
+    symbol
+    safeMint
+    balanceOf
+    ownerOf
+
+    approve - por token
+    getApproved - lectura
+    setApprovalForAll - por toda la coleccion
+    isApprovedForAll - lectura
+
+    transferFrom
+    safeTransferFrom
+    safeTransferFrom
+    tokenUri
+
+    supportsInterface
+    */
+
+    // 1. Para guardar a los dueños de cada NFT
+    // sabremos quien es el duenio de cada token id
+    // apuntamos del token id al address
+    mapping(uint256 => address) duenios;
+
+    // 2. queremos saber cuantos tokens tiene cada duenio
+    mapping(address => uint256) balances;
+
+    // 7. dar permiso para un token
+    mapping(uint256 => address) permisosUnToken;
+
+    // 8. un duenio le da permiso a otra cuenta par manejar todos sus tokens
+    // duenio token => maneja => true/false
+    mapping(address => mapping(address => bool)) permisosTodosTokens;
+
+    // 3. empieza en cero y seguira incrementando
+    uint256 counter;
+
+    function name() public view returns (string memory) {
+        return "";
+    }
+
+    /**
+     * @dev See {IERC721Metadata-symbol}.
+     */
+    function symbol() public view returns (string memory) {
+        return "";
+    }
+
+    // 4. podemos crear la function mint
+    function safeMint(address to) public {
+        duenios[counter] = to;
+        balances[to] += 1;
+
+        counter += 1;
+    }
+
+    // 5. averiguar cuantos nfts tiene una cuenta
+    function balanceOf(address owner) public view returns (uint256) {
+        return balances[owner];
+    }
+
+    // 6. averiguar quien es el duenio de un token
+    function ownerOf(uint256 tokenId) public view returns (address) {
+        return duenios[tokenId];
+    }
+
+    // 9. dar permiso para un token a una address
+    function approve(address to, uint256 tokenId) public {
+        require(ownerOf(tokenId) == msg.sender, "No es el duenio del token");
+        permisosUnToken[tokenId] = to;
+    }
+
+    // 10. devuelve quien tiene el permiso para manejar un token ID
+    function getApproved(uint256 tokenId) public view returns (address) {
+        return permisosUnToken[tokenId];
+    }
+
+    // 11.
+    function setApprovalForAll(address operator, bool approved) public {
+        permisosTodosTokens[msg.sender][operator] = approved;
+    }
+
+    // 12.
+    function isApprovedForAll(address owner, address operator)
+        public
+        view
+        returns (bool)
+    {
+        return permisosTodosTokens[owner][operator];
+    }
+
+    // 13
+    function transferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public {
+        require(ownerOf(tokenId) == from, "No es el duenio");
+
+        duenios[tokenId] = to;
+
+        balances[from] -= 1;
+        balances[to] += 1;
+    }
+
+    // 15
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId
+    ) public {
+        safeTransferFrom(from, to, tokenId, "");
+    }
+
+    // 14
+    function safeTransferFrom(
+        address from,
+        address to,
+        uint256 tokenId,
+        bytes memory data
+    ) public {
+        transferFrom(from, to, tokenId);
+        // validate _checkOnERC721Received
+    }
+
+    // 16
+    function supportsInterface(bytes4 interfaceId) public pure returns (bool) {
+        return interfaceId == type(IERC721).interfaceId;
+    }
+}
+```
+
