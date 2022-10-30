@@ -916,6 +916,18 @@ contract Marcos is Humano, Hombre {
 2. ERC721 standard
 3. Librería de generación imágenes (npm library)
 
+
+
+**Realizar presentación  de NFTs**
+
+Conferencia Activos digitales [aquí](https://www.canva.com/design/DAFQWmz4oxU/MKUJRFwEzgL2Z__UIZnNfg/edit)
+
+
+
+**Cada persona debe hacer mint de un NFT e Interactuar con el contrato**
+
+Interactuar con contrato NFTs Cuy Moche [aquí](https://mumbai.polygonscan.com/address/0x42C79A959159609A8d159756ce4ebd35f4f518aA#code)
+
 #### IPFS
 
 > La misión de IPFS es crear una red resiliente, mejorable y abierta para preservar e incrementar el conocimiento de la humanidad.
